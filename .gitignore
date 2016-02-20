@@ -1,0 +1,4 @@
+*.conf
+lib/.old
+lib/App/DailyDownload/Assets/*
+public/*
