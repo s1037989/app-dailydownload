@@ -1,0 +1,6 @@
+<a href="/<%= $today %>"><%= $today %></a><br />
+<hr />
+% foreach my $asset ( @{assets->list_monikers} ) {
+% my $name = assets->lookup_name($asset);
+<a href="/<%= $asset %>/<%= $today %>/30"><%= $name %></a><br />
+% }

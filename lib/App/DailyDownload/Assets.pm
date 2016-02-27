@@ -1,58 +1,57 @@
 package App::DailyDownload::Assets;
 use Mojo::Base -base;
 
-use Mojo::UserAgent;
-use Mojolicious::Types;
+use Mojo::Loader qw(find_modules load_class);
 
-#use App::DailyDownload::Util qw(md5_sum);
-sub _md5_sum { shift; return '' unless -e $_[0]; Mojo::Util::md5_sum Mojo::Util::slurp shift }
-
-use File::Basename;
-use File::Path;
 use Date::Simple::D8;
+use Date::Range;
+use List::Collection;
 
-has ua => sub { Mojo::UserAgent->new->max_redirects(10) };
-has types => sub { Mojolicious::Types->new };
-has filename => sub { (ref shift) =~ /^.+::(\w+)$/; $1 };
-has fullname => sub { join '/', $_[0]->path, $_[0]->filename };
-has [qw(date path ext link)];
-has days => sub { [] };
-has min_size => 500;
-has agent => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/31.0.1650.63 Chrome/31.0.1650.63 Safari/537.36';
-has referer => 'http://www.google.com';
-has headers => sub { {'User-Agent' => $_[0]->agent, 'Referer' => $_[0]->referer} };
+our $package = __PACKAGE__;
 
-sub download {
-  my $self = shift;
-  my $exists = ((glob($self->fullname.'.*'))[0]);
-  return if $exists && -e $exists && time - ((stat($exists))[9]) < 3600;
-  return if $exists && -s $exists > $self->min_size;
-  my $size = $exists ? -s $exists : 0;
-  # TODO: days attribute needs a starting date setting
-  return if @{$self->days} && not grep { $_ eq (('Sun','Mon','Tue','Wed','Thu','Fri','Sat')[$self->date->day_of_week]) } @{$self->days};
-  # Don't download an asset that's already been downloaded.
-  # Compare HTTP timestamp, filename, md5sum, and/or size
-  my $res;
-  say sprintf "%s, %s", $self->name, $self->date;
-  eval {
-    foreach ( @{$self->crawl} ) {
-      die if ref $res && $res->code != 200;
-      $_ = $self->date->format(ref eq 'CODE' ? $res->$_ : $_);
-      s/\$(\w+)/$self->$1/e;
-      say "  Getting $_";
-      $res = $self->ua->get($_ => $self->headers)->res;
-    }
-    # TODO: make sure $res contains a file, not HTML
-    $self->ext((sort { length $a <=> length $b } @{$self->types->detect($res->headers->content_type)})[0]);
-    my $asset = $res->content->asset;
-    my $fullfile = join '/', $self->path, join('.', $self->filename, $self->ext);
-    if ( $asset->size > $self->min_size ) {
-      say sprintf "  Storing %s bytes in %s", $asset->size, $fullfile;
-      mkpath dirname $fullfile unless -d dirname $fullfile ;
-      $asset->move_to($fullfile);
-    }
-  };
-  return $@;
+has home => sub { die "Required attribute home missing" };
+has list_packages => sub { [&_packages] };
+has list_monikers => sub { [map { /^.+::(\w+)$/; $1 } &_packages] };
+
+sub list {
+  my ($self, @assets) = @_;
+  @assets ? intersect([map { "${package}::$_" } @assets], $self->list_packages) : @{$self->list_packages};
 }
+
+sub date_range {
+  my ($self, $start, $end) = @_;
+#  $start = $start ? Date::Simple::D8->new($start) : Date::Simple::D8->new;
+#  $end = $end ? Date::Simple::D8->new($) : $start;
+#  ref $start and $start->isa('Date::Simple::D8') or $start = Date::Simple::D8->new;
+#  ref $end and $end->isa('Date::Simple::D8') or $end = Date::Simple::D8->new;
+#  $end = Date::Simple::D8->new if $end > Date::Simple::D8->new;
+#  $start = $end if $start > $end;
+  $end = $end ? Date::Simple::D8->new($end) : Date::Simple::D8->new;
+  if ( $start =~ /^\d{1,4}$/ ) {
+    $start -= 1;
+    $start = $end - $start;
+  } else {
+    $start = $start ? Date::Simple::D8->new($start) : Date::Simple::D8->new;
+  }
+  Date::Range->new($start, $end);
+}
+
+sub load {
+  my ($self, $asset, $date) = @_;
+  $asset = "${package}::$asset" unless $asset =~ /^$package/;
+  my $e = load_class $asset;
+  warn qq{Loading "$asset" failed: $e} and return if ref $e;
+  $asset->new(home => $self->home, date => $date);
+}
+
+sub lookup_name {
+  my ($self, $asset) = @_;
+  $asset = "${package}::$asset" unless $asset =~ /^$package/;
+  my $e = load_class $asset;
+  warn qq{Loading "$asset" failed: $e} and return if ref $e;
+  $asset->new->name;
+}
+
+sub _packages { find_modules $package }
 
 1;

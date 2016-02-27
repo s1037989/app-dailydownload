@@ -1,0 +1,10 @@
+<a href="<%= $date - 1 %>">Previous</a>
+<h1><%= $date %></h1>
+<a href="<%= $date + 1 %>">Next</a>
+% foreach my $asset ( @{assets->list_monikers} ) {
+<h2><%= assets->lookup_name($asset) %></h2>
+% my $i = assets->load($asset => $date);
+% if ( $i->img ) {
+<img src="<%= assets->load($asset => $date)->img %>" /><br />
+% }
+% }

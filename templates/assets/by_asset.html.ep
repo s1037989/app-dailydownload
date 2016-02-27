@@ -1,0 +1,8 @@
+<h1><%= assets->lookup_name($asset) %></h1>
+% foreach my $date ( $date_range->dates ) {
+<h2><%= $date %></h2>
+% my $i = assets->load($asset => $date);
+% if ( $i->img ) {
+<img src="<%= assets->load($asset => $date)->img %>" /><br />
+% }
+% }
