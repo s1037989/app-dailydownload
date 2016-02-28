@@ -1,12 +1,9 @@
 package App::DailyDownload::Command::download;
 use Mojo::Base 'Mojolicious::Command';
 
-use Mojo::Loader qw(find_modules load_class);
-
 has description => 'daily download';
 has usage => sub { shift->extract_usage };
 
-use List::Collection;
 use Getopt::Long qw(GetOptionsFromArray :config no_auto_abbrev no_ignore_case);
 
 sub run {
@@ -22,7 +19,7 @@ sub run {
   # Foreach asset (those specified, or all found); then foreach date in the range
   foreach my $asset ( $self->app->assets->list(@assets) ) {
     foreach my $date ( $range->dates ) {
-      $self->app->assets->load($moniker => $date)->download;
+      $self->app->assets->load($asset => $date)->download;
     }
   }
 }

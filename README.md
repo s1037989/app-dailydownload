@@ -23,6 +23,15 @@ $ cpanm App::DailyDownload::Assets:X
 /path/to/app_daily_download download today 7
 ```
 
+Any comic that's unable to be downloaded will get a not_found.png in its place.
+Eventually, we'll make a command to clear out all assets that were not_found so
+that they can be tried again. The download command should create a report of
+the newly downloaded ones so that they can be easily viewed. Perhaps, instead,
+a special route to show all the assets of the latest round.
+
+But how to handle when the website provides its own 404 image? How is this app
+to know that this generated 404 is not the expected asset?
+
 ## To make the assets available via web:
 
 ```
