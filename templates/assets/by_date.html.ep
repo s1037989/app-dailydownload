@@ -8,3 +8,5 @@
 <img src="<%= assets->load($asset => $date)->img %>" /><br />
 % }
 % }
+<a href="<%= $date - 1 %>">Previous</a>
+<a href="<%= $date + 1 %>">Next</a>
